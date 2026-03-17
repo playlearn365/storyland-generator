@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>繪本提示詞產生器</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #F6F3FB;
+  --surface:  #FFFFFF;
+  --border:   #E8E2F4;
+  --text:     #2E2840;
+  --text-2:   #6B6480;
+  --text-3:   #ADA7C4;
+
+  /* macaron */
+  --lav:      #9D8ED4;
+  --lav-lt:   #EDE8F9;
+  --lav-mid:  #7A69B8;
+  --pink:     #E899B2;
+  --pink-lt:  #FCEEF4;
+  --pink-mid: #C96E8E;
+  --mint:     #72C4A8;
+  --mint-lt:  #E2F5EF;
+  --mint-mid: #4DA38A;
+  --peach:    #F0A882;
+  --peach-lt: #FDF0E6;
+  --sky:      #82C0E8;
+  --sky-lt:   #E4F2FC;
+
+  --r:        10px;
+  --r-lg:     16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(135deg, #EDE8F9 0%, #FCEEF4 50%, #E2F5EF 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 3.5rem 2rem 3rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+/* decorative blobs */
+.hero::before {
+  content: '';
+  position: absolute; top: -40px; left: -40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(157,142,212,0.18);
+  pointer-events: none;
+}
+.hero::after {
+  content: '';
+  position: absolute; bottom: -30px; right: -30px;
+  width: 140px; height: 140px; border-radius: 50%;
+  background: rgba(114,196,168,0.18);
+  pointer-events: none;
+}
+.hero-blob {
+  position: absolute; top: 20px; right: 80px;
+  width: 90px; height: 90px; border-radius: 50%;
+  background: rgba(232,153,178,0.15);
+  pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero-chips {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.07em;
+  padding: 5px 12px; border-radius: 20px;
+}
+.chip-lav  { background: var(--lav-lt);   color: var(--lav-mid); }
+.chip-pink { background: var(--pink-lt);  color: var(--pink-mid); }
+.chip-mint { background: var(--mint-lt);  color: var(--mint-mid); }
+.hero-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(26px, 5vw, 42px);
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+.hero-title .hi { color: var(--lav); }
+.hero-title .hi2 { color: var(--pink); }
+.hero-desc {
+  font-size: 14px; color: var(--text-2);
+  font-weight: 300; max-width: 400px;
+  margin: 0 auto; line-height: 1.9;
+}
+
+/* ── LAYOUT ── */
+.wrap { max-width: 680px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+/* ── ANIMATION ── */
+.section {
+  margin-bottom: 1.5rem;
+  animation: rise 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.section:nth-child(1) { animation-delay: 0s; }
+.section:nth-child(2) { animation-delay: 0.07s; }
+.section:nth-child(3) { animation-delay: 0.14s; }
+.section:nth-child(4) { animation-delay: 0.20s; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── API KEY ── */
+.key-card {
+  background: var(--surface);
+  border: 1.5px solid var(--lav-lt);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  animation: rise 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.key-top {
+  display: flex; align-items: center; gap: 12px;
+  padding: 1.1rem 1.5rem;
+  cursor: pointer; user-select: none;
+  transition: background 0.15s;
+  background: var(--lav-lt);
+}
+.key-top:hover { background: #E6E0F6; }
+.key-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--lav); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.key-label { font-size: 13.5px; font-weight: 500; flex: 1; color: var(--lav-mid); }
+.key-badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 20px;
+  font-weight: 500; background: #fff; color: var(--text-3);
+}
+.key-badge.set { color: var(--mint-mid); background: var(--mint-lt); }
+.key-chev { font-size: 11px; color: var(--lav); transition: transform 0.2s; }
+.key-chev.open { transform: rotate(180deg); }
+.key-body { display: none; padding: 1.25rem 1.5rem; }
+.key-body.open { display: block; }
+.key-hint { font-size: 13px; color: var(--text-2); line-height: 1.9; margin-bottom: 12px; }
+.key-hint a { color: var(--lav); text-decoration: none; font-weight: 500; }
+.key-hint a:hover { text-decoration: underline; }
+.key-row { display: flex; gap: 8px; }
+.key-wrap { flex: 1; position: relative; }
+.key-wrap input {
+  width: 100%; padding: 10px 38px 10px 13px;
+  font-size: 13px; font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--r); color: var(--text); transition: border-color 0.15s;
+}
+.key-wrap input:focus { outline: none; border-color: var(--lav); }
+.eye-btn {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: var(--text-3); font-size: 13px;
+}
+.eye-btn:hover { color: var(--text-2); }
+.save-btn {
+  padding: 10px 18px;
+  background: var(--lav); color: #fff;
+  border: none; border-radius: var(--r);
+  font-size: 13px; font-weight: 500;
+  font-family: 'Noto Sans TC', sans-serif;
+  cursor: pointer; white-space: nowrap; transition: background 0.15s;
+}
+.save-btn:hover { background: var(--lav-mid); }
+.key-msg { font-size: 12px; margin-top: 8px; display: none; }
+.key-msg.ok  { display: block; color: var(--mint-mid); }
+.key-msg.err { display: block; color: #D05070; }
+
+/* ── STEP CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1.75rem;
+}
+/* colored left accent per step */
+.card-story  { border-top: 3px solid var(--pink); }
+.card-type   { border-top: 3px solid var(--lav); }
+.card-set    { border-top: 3px solid var(--mint); }
+
+.step-label {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 1.1rem;
+}
+.step-pill {
+  font-size: 10.5px; font-weight: 500; letter-spacing: 0.07em;
+  padding: 3px 10px; border-radius: 20px;
+}
+.pill-pink  { background: var(--pink-lt);  color: var(--pink-mid); }
+.pill-lav   { background: var(--lav-lt);   color: var(--lav-mid); }
+.pill-mint  { background: var(--mint-lt);  color: var(--mint-mid); }
+.step-title { font-size: 14px; font-weight: 500; color: var(--text); }
+
+/* textarea */
+textarea {
+  width: 100%; min-height: 140px;
+  padding: 14px 16px;
+  font-size: 14px; font-family: 'Noto Sans TC', sans-serif;
+  line-height: 1.85; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: var(--r);
+  color: var(--text); resize: vertical; transition: border-color 0.15s;
+}
+textarea:focus { outline: none; border-color: var(--pink); }
+textarea::placeholder { color: var(--text-3); font-weight: 300; }
+.char-hint { font-size: 11.5px; color: var(--text-3); text-align: right; margin-top: 5px; }
+
+/* type tabs */
+.type-tabs {
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--bg); border-radius: var(--r); padding: 4px; gap: 0;
+}
+.tab-btn {
+  padding: 12px 16px; border: none; border-radius: 7px;
+  background: transparent; color: var(--text-2);
+  font-size: 14px; font-weight: 400;
+  font-family: 'Noto Sans TC', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  background: var(--surface); color: var(--text); font-weight: 500;
+  box-shadow: 0 1px 6px rgba(157,142,212,0.2);
+}
+.tab-icon { font-size: 17px; }
+.tab-sub { font-size: 11px; color: var(--text-3); display: block; margin-top: 1px; }
+.tab-btn.active .tab-sub { color: var(--text-2); }
+
+/* sub label inside settings */
+.sub-label {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 8px;
+}
+
+/* select */
+.sel-wrap { position: relative; }
+.sel-wrap::after {
+  content: '▾'; position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); font-size: 12px; pointer-events: none;
+}
+select {
+  width: 100%; padding: 11px 36px 11px 13px;
+  font-size: 14px; font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r);
+  color: var(--text); appearance: none; -webkit-appearance: none;
+  cursor: pointer; transition: border-color 0.15s;
+}
+select:focus { outline: none; border-color: var(--mint); }
+select:hover { border-color: var(--lav); }
+.sel-note { font-size: 11.5px; color: var(--text-3); margin-top: 6px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 480px) { .two-col { grid-template-columns: 1fr; } }
+
+/* text input */
+input[type="text"] {
+  width: 100%; padding: 11px 13px;
+  font-size: 14px; font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r);
+  color: var(--text); transition: border-color 0.15s;
+}
+input[type="text"]:focus { outline: none; border-color: var(--mint); }
+input[type="text"]::placeholder { color: var(--text-3); font-weight: 300; }
+
+.divider { height: 1px; background: var(--border); margin: 1.4rem 0; }
+
+/* coloring info box */
+.info-box {
+  background: var(--sky-lt);
+  border-radius: var(--r); border-left: 3px solid var(--sky);
+  padding: 13px 16px;
+  font-size: 13px; color: #4A88AC; line-height: 1.85;
+}
+
+/* ── GENERATE BUTTON ── */
+.gen-btn {
+  width: 100%; padding: 17px;
+  background: linear-gradient(135deg, var(--lav) 0%, var(--pink) 100%);
+  color: #fff; border: none; border-radius: var(--r-lg);
+  font-size: 15px; font-weight: 500;
+  font-family: 'Noto Sans TC', sans-serif;
+  cursor: pointer; letter-spacing: 0.03em;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all 0.2s; margin-bottom: 1.5rem;
+  box-shadow: 0 4px 18px rgba(157,142,212,0.35);
+}
+.gen-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(157,142,212,0.45); }
+.gen-btn:active { transform: translateY(0); box-shadow: 0 2px 10px rgba(157,142,212,0.3); }
+.gen-btn:disabled {
+  background: var(--border); color: var(--text-3);
+  cursor: not-allowed; transform: none; box-shadow: none;
+}
+.gen-sparkle { font-size: 17px; }
+
+/* ── LOADING ── */
+.loading { display: none; padding: 2rem; text-align: center; }
+.loading.on { display: block; }
+.loading-row { display: inline-flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-2); }
+.mac-dots { display: flex; gap: 6px; }
+.mac-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  animation: bounce 1.2s ease-in-out infinite;
+}
+.mac-dot:nth-child(1) { background: var(--lav);  animation-delay: 0s; }
+.mac-dot:nth-child(2) { background: var(--pink); animation-delay: 0.18s; }
+.mac-dot:nth-child(3) { background: var(--mint); animation-delay: 0.36s; }
+@keyframes bounce {
+  0%,80%,100% { opacity: .3; transform: scale(.7); }
+  40%         { opacity: 1;  transform: scale(1); }
+}
+
+/* ── RESULT ── */
+.result {
+  display: none; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  overflow: hidden; animation: rise 0.45s cubic-bezier(.22,1,.36,1) both;
+}
+.result.on { display: block; }
+.result-bar {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--lav-lt) 0%, var(--pink-lt) 100%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.result-label { font-size: 14px; font-weight: 500; flex: 1; color: var(--lav-mid); }
+.result-btns { display: flex; gap: 6px; }
+.r-btn {
+  padding: 6px 14px; font-size: 12px; font-weight: 500;
+  font-family: 'Noto Sans TC', sans-serif;
+  border-radius: 20px; cursor: pointer; transition: all 0.15s;
+}
+.r-btn-copy { background: var(--lav); color: #fff; border: none; }
+.r-btn-copy:hover { background: var(--lav-mid); }
+.r-btn-dl { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+.r-btn-dl:hover { border-color: var(--lav); color: var(--lav); background: var(--lav-lt); }
+.result-body { padding: 1.75rem 2rem; }
+.result-text {
+  font-size: 13.5px; color: var(--text-2);
+  line-height: 2.05; white-space: pre-wrap;
+  font-family: 'Noto Sans TC', sans-serif; font-weight: 300;
+}
+.result-foot {
+  padding: 13px 20px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.foot-note { font-size: 12px; color: var(--text-3); flex: 1; min-width: 160px; }
+.regen-btn {
+  padding: 7px 16px; font-size: 12.5px; font-weight: 500;
+  font-family: 'Noto Sans TC', sans-serif;
+  border: 1px solid var(--border); border-radius: 20px;
+  background: transparent; color: var(--text-2);
+  cursor: pointer; transition: all 0.15s;
+}
+.regen-btn:hover { border-color: var(--pink); color: var(--pink-mid); background: var(--pink-lt); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .wrap { padding: 1.25rem 0.875rem 4rem; }
+  .card { padding: 1.1rem; }
+  .result-body { padding: 1rem; }
+
+  /* hero */
+  .hero { padding: 2.5rem 1.25rem 2rem; }
+  .hero-chips { gap: 6px; }
+  .chip { font-size: 10.5px; padding: 4px 10px; }
+
+  /* key card */
+  .key-top { padding: 1rem 1.1rem; }
+  .key-body { padding: 1rem 1.1rem; }
+  .key-row { flex-direction: column; }
+  .key-row .save-btn { width: 100%; padding: 11px; text-align: center; }
+
+  /* type tabs — stack vertically on very small screens */
+  .type-tabs { grid-template-columns: 1fr 1fr; }
+  .tab-btn { padding: 10px 8px; font-size: 13px; gap: 6px; }
+  .tab-icon { font-size: 15px; }
+
+  /* two-col → single col */
+  .two-col { grid-template-columns: 1fr; gap: 12px; }
+
+  /* selects & inputs — bigger touch target */
+  select, input[type="text"], textarea {
+    font-size: 16px; /* 防止 iOS 自動縮放 */
+  }
+  select { padding: 13px 36px 13px 13px; }
+  input[type="text"] { padding: 13px; }
+  textarea { min-height: 120px; padding: 12px; }
+
+  /* generate button */
+  .gen-btn { padding: 15px; font-size: 15px; border-radius: 12px; }
+
+  /* result bar */
+  .result-bar { flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+  .result-label { font-size: 13px; width: 100%; }
+  .result-btns { width: 100%; justify-content: flex-end; }
+
+  /* part bar */
+  .part-bar { flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  .part-title { font-size: 12px; flex: 1; }
+
+  /* result text */
+  .result-text { font-size: 13px; line-height: 1.9; }
+
+  /* result footer */
+  .result-foot { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 14px; }
+  .regen-btn { width: 100%; text-align: center; padding: 11px; }
+}
+
+/* ── TWO-PART RESULT ── */
+.result-part { border-bottom: 1px solid var(--border); }
+.result-part:last-of-type { border-bottom: none; }
+.part-bar {
+  padding: 11px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.part-title { font-size: 13px; font-weight: 500; }
+.part-bar-lav   { background: var(--lav-lt); }
+.part-bar-lav   .part-title { color: var(--lav-mid); }
+.part-bar-pink  { background: var(--pink-lt); }
+.part-bar-pink  .part-title { color: var(--pink-mid); }
+.part-bar-mint  { background: var(--mint-lt); }
+.part-bar-mint  .part-title { color: var(--mint-mid); }
+.part-bar-peach { background: var(--peach-lt); }
+.part-bar-peach .part-title { color: #B8703A; }
+.part-bar-sky   { background: var(--sky-lt); }
+.part-bar-sky   .part-title { color: #3A80A8; }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <div class="hero-blob"></div>
+  <div class="hero-inner">
+    <div class="hero-chips">
+      <span class="chip chip-lav">📖 繪本腳本</span>
+      <span class="chip chip-pink">✏️ 著色畫</span>
+      <span class="chip chip-mint">✨ AI 提示詞</span>
+    </div>
+    <h1 class="hero-title">
+      <span class="hi">繪本</span> &amp; <span class="hi2">著色畫</span><br>提示詞產生器
+    </h1>
+    <p class="hero-desc">輸入故事，選擇風格，一鍵生成可用於<br>Midjourney、DALL-E 的完整圖像腳本</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- API KEY -->
+  <div class="key-card section">
+    <div class="key-top" onclick="toggleKey()">
+      <div class="key-icon">🔑</div>
+      <span class="key-label">Groq API Key 設定</span>
+      <span class="key-badge" id="key-badge">尚未設定</span>
+      <span class="key-chev" id="key-chev">▾</span>
+    </div>
+    <div class="key-body" id="key-body">
+      <p class="key-hint">
+        使用 <a href="https://console.groq.com/keys" target="_blank">Groq</a> 免費 AI 服務（速度快、免費額度充足）。<br>
+        請至 <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> 申請 API Key 後貼上。<br>
+        🔒 Key 僅儲存於您的瀏覽器本機，不會傳送至任何伺服器。
+      </p>
+      <div class="key-row">
+        <div class="key-wrap">
+          <input type="password" id="key-inp" placeholder="gsk_xxxxxxxxxxxxxxxxxx" autocomplete="off" />
+          <button class="eye-btn" onclick="toggleEye()">👁</button>
+        </div>
+        <button class="save-btn" onclick="saveKey()">儲存</button>
+      </div>
+      <div class="key-msg" id="key-msg"></div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="section">
+    <div class="card card-story">
+      <div class="step-label">
+        <span class="step-pill pill-pink">步驟 1</span>
+        <span class="step-title">輸入故事內容</span>
+      </div>
+      <textarea id="story" placeholder="將故事文字貼上或輸入於此…&#10;&#10;例：從前有隻小熊住在森林裡，他非常想交到新朋友，但每次見到其他動物就會緊張得說不出話來…"></textarea>
+      <div class="char-hint" id="char-hint">0 字</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="section">
+    <div class="card card-type">
+      <div class="step-label">
+        <span class="step-pill pill-lav">步驟 2</span>
+        <span class="step-title">選擇生成類型</span>
+      </div>
+      <div class="type-tabs">
+        <button class="tab-btn active" id="tab-book" onclick="setType('book')">
+          <span class="tab-icon">📖</span>
+          <span>彩色繪本<span class="tab-sub">含風格與分頁腳本</span></span>
+        </button>
+        <button class="tab-btn" id="tab-color" onclick="setType('coloring')">
+          <span class="tab-icon">✏️</span>
+          <span>著色畫<span class="tab-sub">黑白線條稿提示詞</span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="section">
+
+    <!-- book -->
+    <div id="book-panel" class="card card-set">
+      <div class="step-label">
+        <span class="step-pill pill-mint">步驟 3</span>
+        <span class="step-title">繪本設定</span>
+      </div>
+
+      <div class="two-col" style="margin-bottom:1.25rem;">
+        <div>
+          <div class="sub-label">插圖風格</div>
+          <div class="sel-wrap">
+            <select id="style-sel" onchange="onStyleChange()">
+              <option value="0">水彩插畫風</option>
+              <option value="1">拼貼藝術風</option>
+              <option value="2">卡通動畫風</option>
+              <option value="3">簡約扁平風</option>
+              <option value="4">手繪蠟筆風</option>
+              <option value="5">彩色鉛筆風</option>
+              <option value="6">版畫木刻風</option>
+              <option value="7">極簡圖形風</option>
+              <option value="8">3D 數位插畫</option>
+              <option value="9">宮崎駿動畫風</option>
+            </select>
+          </div>
+          <div class="sel-note" id="style-cap">柔和色彩、自然筆觸、氛圍溫暖</div>
+        </div>
+        <div>
+          <div class="sub-label">希望頁數</div>
+          <div class="sel-wrap">
+            <select id="pages-sel">
+              <option value="8">8 頁 · 短篇，幼兒園適用</option>
+              <option value="12" selected>12 頁 · 低年級適用</option>
+              <option value="16">16 頁 · 一般繪本長度</option>
+              <option value="20">20 頁 · 豐富情節</option>
+              <option value="24">24 頁 · 長篇繪本</option>
+            </select>
+          </div>
+          <div class="sel-note">第 1 頁為封面（書名 + 作者）</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="two-col">
+        <div>
+          <div class="sub-label">繪本名稱</div>
+          <input type="text" id="book-title" placeholder="例：小熊找朋友" />
+        </div>
+        <div>
+          <div class="sub-label">作者姓名</div>
+          <input type="text" id="author" placeholder="例：王小明老師" />
+        </div>
+      </div>
+    </div>
+
+    <!-- coloring -->
+    <div id="color-panel" class="card card-set" style="display:none;">
+      <div class="step-label">
+        <span class="step-pill pill-mint">步驟 3</span>
+        <span class="step-title">著色畫設定</span>
+      </div>
+      <div class="info-box" style="margin-bottom:1.25rem;">
+        依故事情節分成數個場景，每個場景生成一張黑白線條稿提示詞。<br>
+        可直接輸入 Midjourney、DALL-E 或 Stable Diffusion，產生適合列印著色的線稿。
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="sub-label">著色畫主題名稱</div>
+          <input type="text" id="color-title" placeholder="例：小熊的冒險旅程" />
+        </div>
+        <div>
+          <div class="sub-label">適合年齡</div>
+          <input type="text" id="age" value="3.5–6 歲" placeholder="例：3.5–6 歲" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- GENERATE -->
+  <button class="gen-btn" id="gen-btn" onclick="generate()">
+    <span class="gen-sparkle">✨</span>
+    生成提示詞腳本
+  </button>
+
+  <!-- LOADING -->
+  <div class="loading" id="loading">
+    <div class="loading-row">
+      <div class="mac-dots">
+        <div class="mac-dot"></div>
+        <div class="mac-dot"></div>
+        <div class="mac-dot"></div>
+      </div>
+      <span>AI 正在生成腳本，請稍候…</span>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result" id="result">
+    <div class="result-bar">
+      <div class="result-label" id="result-label">生成結果</div>
+      <div class="result-btns">
+        <button class="r-btn r-btn-dl" onclick="doDownload()">下載 .txt</button>
+      </div>
+    </div>
+
+    <!-- 動態生成的分段內容區 -->
+    <div id="parts-container"></div>
+
+    <div class="result-foot">
+      <div class="foot-note" id="foot-note">複製後可直接貼入 NotebookLM 使用</div>
+      <button class="regen-btn" onclick="generate()">重新生成</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STYLES = [
+  { zh:'水彩插畫風',  en:'Watercolor Illustration',      cap:'柔和色彩、自然筆觸、氛圍溫暖' },
+  { zh:'拼貼藝術風',  en:'Collage Style',                 cap:'色塊明亮、構圖簡單、辨識度高' },
+  { zh:'卡通動畫風',  en:'Cartoon Style',                 cap:'角色表情誇張、比例可愛討喜' },
+  { zh:'簡約扁平風',  en:'Flat Illustration',             cap:'幾何造型、顏色單純、線條乾淨' },
+  { zh:'手繪蠟筆風',  en:'Crayon Style',                  cap:'模仿兒童筆觸、色彩鮮豔、童趣強烈' },
+  { zh:'彩色鉛筆風',  en:'Colored Pencil Illustration',   cap:'線條細膩、層次柔和、畫面溫暖自然' },
+  { zh:'版畫木刻風',  en:'Woodcut / Printmaking Style',   cap:'對比強烈、線條厚重、藝術感明顯' },
+  { zh:'極簡圖形風',  en:'Minimal Graphic Style',         cap:'極少線條與形狀、畫面清晰易辨' },
+  { zh:'3D 數位插畫', en:'3D Digital Illustration',       cap:'立體角色、光影效果、現代感強' },
+  { zh:'宮崎駿動畫風',en:'Ghibli-Inspired Illustration', cap:'溫暖自然的色彩、細膩背景、情感豐富' },
+];
+const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
+let mode = 'book', apiKey = '', resultParts = [], keyOpen = false;
+
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('groq_api_key');
+  if (saved) { apiKey = saved; document.getElementById('key-inp').value = saved; setKeyOk(); }
+  else { toggleKey(); }
+  document.getElementById('story').addEventListener('input', function() {
+    document.getElementById('char-hint').textContent = this.value.length + ' 字';
+  });
+});
+
+function toggleKey() {
+  keyOpen = !keyOpen;
+  document.getElementById('key-body').classList.toggle('open', keyOpen);
+  document.getElementById('key-chev').classList.toggle('open', keyOpen);
+}
+function setKeyOk() {
+  const b = document.getElementById('key-badge');
+  b.textContent = '✓ 已設定'; b.className = 'key-badge set';
+}
+function saveKey() {
+  const v = document.getElementById('key-inp').value.trim();
+  const m = document.getElementById('key-msg');
+  if (!v) { m.className='key-msg err'; m.textContent='請輸入 API Key'; return; }
+  if (!v.startsWith('gsk_')) { m.className='key-msg err'; m.textContent='Groq API Key 應以 gsk_ 開頭，請確認'; return; }
+  apiKey = v; localStorage.setItem('groq_api_key', v);
+  m.className='key-msg ok'; m.textContent='✓ 已儲存於瀏覽器本機';
+  setKeyOk();
+  setTimeout(() => { if (keyOpen) toggleKey(); }, 700);
+}
+function toggleEye() {
+  const i = document.getElementById('key-inp');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+function setType(t) {
+  mode = t;
+  document.getElementById('tab-book').classList.toggle('active', t==='book');
+  document.getElementById('tab-color').classList.toggle('active', t==='coloring');
+  document.getElementById('book-panel').style.display  = t==='book'     ? '' : 'none';
+  document.getElementById('color-panel').style.display = t==='coloring' ? '' : 'none';
+}
+function onStyleChange() {
+  const i = parseInt(document.getElementById('style-sel').value);
+  document.getElementById('style-cap').textContent = STYLES[i].cap;
+}
+
+/* 每段最多 8 頁 */
+const CHUNK = 8;
+function makeChunks(total) {
+  const chunks = [];
+  for (let from = 1; from <= total; from += CHUNK) {
+    chunks.push({ from, to: Math.min(from + CHUNK - 1, total) });
+  }
+  return chunks;
+}
+
+/* 色彩輪流 */
+const PART_COLORS = ['lav', 'pink', 'mint', 'peach', 'sky'];
+
+/* 動態建立分段 UI */
+function renderParts(chunks) {
+  const container = document.getElementById('parts-container');
+  container.innerHTML = '';
+  chunks.forEach((c, i) => {
+    const color = PART_COLORS[i % PART_COLORS.length];
+    const div = document.createElement('div');
+    div.className = 'result-part';
+    div.innerHTML = `
+      <div class="part-bar part-bar-${color}">
+        <span class="part-title" id="pt-${i}">⏳ 生成中…</span>
+        <button class="r-btn r-btn-copy" id="pb-${i}" onclick="doCopy(${i})" disabled>複製</button>
+      </div>
+      <div class="result-body">
+        <div class="result-text" id="pc-${i}">請稍候…</div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function setLoadMsg(msg) {
+  const el = document.querySelector('.loading span');
+  if (el) el.textContent = msg;
+}
+
+function charBlock() {
+  return `【角色處理原則（內部使用，不輸出）】
+請先在腦中為每位主角建立固定外觀描述（英文），之後每頁的「生圖提示詞」中凡出現該角色，必須完整複製該描述，確保角色前後一致。不輸出角色定義、規則說明等任何額外文字。同一角色外觀描述每頁完全相同。`;
+}
+
+function buildPagePrompt(story, title, author, s, from, to, total) {
+  const isCover = from === 1;
+  return `你是一位專業的兒童繪本腳本師與 AI 插圖提示詞設計師。
+
+【故事內容】${story}
+
+【繪本設定】
+- 繪本名稱：${title} · 作者：${author}
+- 插圖風格：${s.zh}（${s.en}）· 風格特色：${s.cap}
+- 全書共 ${total} 頁 · 本次輸出：第 ${from} 頁 至 第 ${to} 頁（共 ${to-from+1} 頁）
+
+${charBlock()}
+
+【輸出格式 — 嚴格只輸出此格式，每頁兩個區塊，不加其他任何文字】
+
+${isCover ? `---
+第 1 頁｜封面
+🎨 生圖提示詞：
+children's picture book cover, title "${title}", author "${author}", [主角完整外觀描述], ${s.en} style, ${s.cap}, warm and inviting, soft lighting, high quality illustration
+📖 繪本文字：
+${title}
+${author}
+
+` : ''}---
+第 X 頁（依序從第 ${isCover?2:from} 頁輸出到第 ${to} 頁）
+🎨 生圖提示詞：
+[角色完整外觀描述（一字不差）], [場景與動作], ${s.en} style, ${s.cap}, high quality children's book illustration
+📖 繪本文字：
+[印在繪本上的文字，20–60字，溫暖，適合兒童]
+
+【規定】封面繪本文字只有書名和作者 · 第 ${to} 頁${to===total?'是最後一頁，溫馨收尾':`不是最後一頁（全書共${total}頁），故事未結束`} · 嚴格輸出 ${to-from+1} 頁不多不少`;
+}
+
+function buildColorPrompt() {
+  const story = document.getElementById('story').value.trim();
+  const title = document.getElementById('color-title').value.trim() || '著色畫系列';
+  const age   = document.getElementById('age').value.trim()         || '3.5–6 歲';
+  return `你是專業的兒童著色畫設計師與 AI 提示詞專家。請根據下方故事，設計一套適合 ${age} 的著色畫系列提示詞腳本。
+
+【故事內容】${story}
+【設定】主題：${title} · 年齡：${age}
+
+從故事中提取 5–7 個代表性場景，每個場景設計一張著色畫提示詞，格式如下：
+
+════════════════════
+著色畫 X｜[場景名稱]
+════════════════════
+🖼 場景說明：[2-3 句，給老師閱讀]
+🎨 AI 線稿提示詞（英文）：coloring page for children, [場景描述], black and white line art, clean bold outlines, no shading, no gray fills, white background, simple design, child-friendly, printable, ${age} appropriate
+✏️ 線條複雜度：[簡單 / 中等 / 較複雜]
+🎨 著色建議：[配色方向、工具建議、課堂引導]`;
+}
+
+async function callGroq(prompt) {
+  const r = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [
+        { role:'system', content:'你是一位專業的兒童繪本設計師與 AI 提示詞專家。請用繁體中文回應，AI 圖像提示詞部分使用英文。' },
+        { role:'user', content: prompt }
+      ],
+      temperature: 0.7, max_tokens: 6000
+    })
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(()=>({}));
+    if (r.status===401) throw new Error('API Key 無效，請重新確認後儲存');
+    if (r.status===429) throw new Error('請求太頻繁，請稍後幾秒再試');
+    throw new Error(e.error?.message || `HTTP ${r.status}`);
+  }
+  const data = await r.json();
+  return data.choices?.[0]?.message?.content || '生成失敗，請再試一次。';
+}
+
+async function generate() {
+  if (!apiKey) { if (!keyOpen) toggleKey(); document.getElementById('key-inp').focus(); return; }
+  const story = document.getElementById('story').value.trim();
+  if (!story) { alert('請先輸入故事內容！'); return; }
+
+  const btn  = document.getElementById('gen-btn');
+  const load = document.getElementById('loading');
+  const res  = document.getElementById('result');
+  btn.disabled = true; load.classList.add('on'); res.classList.remove('on');
+  resultParts = [];
+
+  try {
+    if (mode === 'coloring') {
+      setLoadMsg('AI 正在生成著色畫腳本，請稍候…');
+      renderParts([{from:0,to:0}]);
+      const txt = await callGroq(buildColorPrompt());
+      resultParts = [txt];
+      document.getElementById('result-label').textContent = '著色畫腳本';
+      document.getElementById('pt-0').textContent = '著色畫提示詞';
+      document.getElementById('pc-0').textContent = txt;
+      document.getElementById('pb-0').disabled = false;
+      document.getElementById('foot-note').textContent = '複製後可直接貼入 NotebookLM 使用';
+
+    } else {
+      const si    = parseInt(document.getElementById('style-sel').value);
+      const s     = STYLES[si];
+      const pages = parseInt(document.getElementById('pages-sel').value);
+      const title = document.getElementById('book-title').value.trim() || '（未填寫）';
+      const author= document.getElementById('author').value.trim()     || '（未填寫）';
+      const chunks = makeChunks(pages);
+
+      document.getElementById('result-label').textContent = `繪本腳本 · ${s.zh} · ${pages} 頁`;
+      renderParts(chunks);
+
+      for (let i = 0; i < chunks.length; i++) {
+        const { from, to } = chunks[i];
+        setLoadMsg(`生成第 ${from}–${to} 頁（${i+1} / ${chunks.length} 段），請稍候…`);
+
+        const txt = await callGroq(buildPagePrompt(story, title, author, s, from, to, pages));
+        resultParts[i] = txt;
+
+        const label = chunks.length === 1
+          ? `第 ${from}–${to} 頁`
+          : `第 ${from}–${to} 頁　　貼入 NotebookLM 第 ${i+1} 次`;
+        document.getElementById(`pt-${i}`).textContent = label;
+        document.getElementById(`pc-${i}`).textContent = txt;
+        document.getElementById(`pb-${i}`).disabled = false;
+      }
+
+      document.getElementById('foot-note').textContent = chunks.length === 1
+        ? '複製後可直接貼入 NotebookLM 使用'
+        : `共分 ${chunks.length} 段，請由上至下依序複製貼入 NotebookLM`;
+    }
+
+    res.classList.add('on');
+    res.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  } catch(e) {
+    document.getElementById('parts-container').innerHTML =
+      `<div class="result-body"><div class="result-text">⚠ 錯誤：${e.message}</div></div>`;
+    res.classList.add('on');
+  }
+
+  btn.disabled = false; load.classList.remove('on');
+}
+
+function doCopy(i) {
+  const txt = resultParts[i];
+  if (!txt) return;
+  navigator.clipboard.writeText(txt).then(() => {
+    const b = document.getElementById(`pb-${i}`);
+    b.textContent = '已複製 ✓';
+    setTimeout(() => b.textContent = '複製', 2000);
+  });
+}
+
+function doDownload() {
+  if (!resultParts.length) return;
+  const sep = '\n\n' + '═'.repeat(40) + '\n\n';
+  const all = resultParts.filter(Boolean).join(sep);
+  const name = mode==='book'
+    ? (document.getElementById('book-title').value.trim() || '繪本腳本')
+    : (document.getElementById('color-title').value.trim() || '著色畫腳本');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([all], {type:'text/plain;charset=utf-8'}));
+  a.download = name + '_提示詞腳本.txt'; a.click();
+}
+
+</script>
+</body>
+</html>
