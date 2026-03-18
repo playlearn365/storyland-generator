@@ -504,33 +504,15 @@ input[type="text"]::placeholder { color: var(--text-3); font-weight: 300; }
     </div>
   </div>
 
-  <!-- STEP 2 -->
-  <div class="section">
-    <div class="card card-type">
-      <div class="step-label">
-        <span class="step-pill pill-lav">步驟 2</span>
-        <span class="step-title">選擇生成類型</span>
-      </div>
-      <div class="type-tabs">
-        <button class="tab-btn active" id="tab-book" onclick="setType('book')">
-          <span class="tab-icon">📖</span>
-          <span>彩色繪本<span class="tab-sub">含風格與分頁腳本</span></span>
-        </button>
-        <button class="tab-btn" id="tab-color" onclick="setType('coloring')">
-          <span class="tab-icon">✏️</span>
-          <span>著色畫<span class="tab-sub">黑白線條稿提示詞</span></span>
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- STEP 2 (removed – merged into Step 3 style selector) -->
 
   <!-- STEP 3 -->
   <div class="section">
 
-    <!-- book -->
+    <!-- 繪本設定（統一） -->
     <div id="book-panel" class="card card-set">
       <div class="step-label">
-        <span class="step-pill pill-mint">步驟 3</span>
+        <span class="step-pill pill-mint">步驟 2</span>
         <span class="step-title">繪本設定</span>
       </div>
 
@@ -549,6 +531,7 @@ input[type="text"]::placeholder { color: var(--text-3); font-weight: 300; }
               <option value="7">極簡圖形風</option>
               <option value="8">3D 數位插畫</option>
               <option value="9">宮崎駿動畫風</option>
+              <option value="10">著色畫繪本 ✏️</option>
             </select>
           </div>
           <div class="sel-note" id="style-cap">柔和色彩、自然筆觸、氛圍溫暖</div>
@@ -564,11 +547,23 @@ input[type="text"]::placeholder { color: var(--text-3); font-weight: 300; }
               <option value="24">24 頁 · 長篇繪本</option>
             </select>
           </div>
-          <div class="sel-note">第 1 頁為封面（書名 + 作者）</div>
+          <div class="sel-note" id="pages-note">第 1 頁為封面（書名 + 作者）</div>
         </div>
       </div>
 
       <div class="divider"></div>
+
+      <!-- 著色畫額外設定（只在選著色畫時顯示） -->
+      <div id="coloring-extra" style="display:none; margin-bottom:1.25rem;">
+        <div class="info-box" style="margin-bottom:1rem;">
+          ✏️ 著色畫繪本：依故事分頁，每頁生成一張黑白線條稿提示詞，可直接輸入 Midjourney、DALL-E 或 Stable Diffusion 產生適合列印著色的線稿。
+        </div>
+        <div>
+          <div class="sub-label">適合年齡</div>
+          <input type="text" id="age" value="3.5–6 歲" placeholder="例：3.5–6 歲" style="max-width:200px;" />
+        </div>
+        <div class="divider"></div>
+      </div>
 
       <div class="two-col">
         <div>
@@ -578,28 +573,6 @@ input[type="text"]::placeholder { color: var(--text-3); font-weight: 300; }
         <div>
           <div class="sub-label">作者姓名</div>
           <input type="text" id="author" placeholder="例：王小明老師" />
-        </div>
-      </div>
-    </div>
-
-    <!-- coloring -->
-    <div id="color-panel" class="card card-set" style="display:none;">
-      <div class="step-label">
-        <span class="step-pill pill-mint">步驟 3</span>
-        <span class="step-title">著色畫設定</span>
-      </div>
-      <div class="info-box" style="margin-bottom:1.25rem;">
-        依故事情節分成數個場景，每個場景生成一張黑白線條稿提示詞。<br>
-        可直接輸入 Midjourney、DALL-E 或 Stable Diffusion，產生適合列印著色的線稿。
-      </div>
-      <div class="two-col">
-        <div>
-          <div class="sub-label">著色畫主題名稱</div>
-          <input type="text" id="color-title" placeholder="例：小熊的冒險旅程" />
-        </div>
-        <div>
-          <div class="sub-label">適合年齡</div>
-          <input type="text" id="age" value="3.5–6 歲" placeholder="例：3.5–6 歲" />
         </div>
       </div>
     </div>
@@ -656,11 +629,12 @@ const STYLES = [
   { zh:'極簡圖形風',  en:'Minimal Graphic Style',         cap:'極少線條與形狀、畫面清晰易辨' },
   { zh:'3D 數位插畫', en:'3D Digital Illustration',       cap:'立體角色、光影效果、現代感強' },
   { zh:'宮崎駿動畫風',en:'Ghibli-Inspired Illustration', cap:'溫暖自然的色彩、細膩背景、情感豐富' },
+  { zh:'著色畫繪本',  en:'Coloring Book',                 cap:'黑白線條稿、粗細適中、適合兒童著色', coloring: true },
 ];
 const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
-let mode = 'book', apiKey = '', resultParts = [], keyOpen = false;
+let apiKey = '', resultParts = [], keyOpen = false;
 
 window.addEventListener('DOMContentLoaded', () => {
   const saved = localStorage.getItem('groq_api_key');
@@ -694,18 +668,16 @@ function toggleEye() {
   const i = document.getElementById('key-inp');
   i.type = i.type === 'password' ? 'text' : 'password';
 }
-function setType(t) {
-  mode = t;
-  document.getElementById('tab-book').classList.toggle('active', t==='book');
-  document.getElementById('tab-color').classList.toggle('active', t==='coloring');
-  document.getElementById('book-panel').style.display  = t==='book'     ? '' : 'none';
-  document.getElementById('color-panel').style.display = t==='coloring' ? '' : 'none';
-}
 function onStyleChange() {
   const i = parseInt(document.getElementById('style-sel').value);
-  document.getElementById('style-cap').textContent = STYLES[i].cap;
+  const s = STYLES[i];
+  document.getElementById('style-cap').textContent = s.cap;
+  const isColoring = !!s.coloring;
+  document.getElementById('coloring-extra').style.display = isColoring ? '' : 'none';
+  document.getElementById('pages-note').textContent = isColoring
+    ? '每頁生成一張著色畫線稿提示詞'
+    : '第 1 頁為封面（書名 + 作者）';
 }
-
 /* 每段最多 8 頁 */
 const CHUNK = 8;
 function makeChunks(total) {
@@ -784,7 +756,7 @@ ${author}
 
 function buildColorPrompt() {
   const story = document.getElementById('story').value.trim();
-  const title = document.getElementById('color-title').value.trim() || '著色畫系列';
+  const title = document.getElementById('book-title').value.trim() || '著色畫系列';
   const age   = document.getElementById('age').value.trim()         || '3.5–6 歲';
   return `你是專業的兒童著色畫設計師與 AI 提示詞專家。請根據下方故事，設計一套適合 ${age} 的著色畫系列提示詞腳本。
 
@@ -800,6 +772,41 @@ function buildColorPrompt() {
 🎨 AI 線稿提示詞（英文）：coloring page for children, [場景描述], black and white line art, clean bold outlines, no shading, no gray fills, white background, simple design, child-friendly, printable, ${age} appropriate
 ✏️ 線條複雜度：[簡單 / 中等 / 較複雜]
 🎨 著色建議：[配色方向、工具建議、課堂引導]`;
+}
+
+function buildColoringBookPrompt(story, title, author, age, from, to, total) {
+  const isCover = from === 1;
+  return `你是專業的兒童著色畫繪本設計師與 AI 提示詞專家。請根據故事內容，為著色畫繪本生成分頁腳本。
+
+【故事內容】${story}
+
+【繪本設定】
+- 繪本名稱：${title} · 作者：${author}
+- 風格：著色畫（黑白線條稿，適合兒童著色）
+- 適合年齡：${age}
+- 全書共 ${total} 頁 · 本次輸出：第 ${from} 頁 至 第 ${to} 頁（共 ${to-from+1} 頁）
+
+【角色原則（內部）】
+請為每位主角建立固定外觀描述（英文），每頁的線稿提示詞中凡出現該角色，必須完整複製該描述確保一致性。
+
+【輸出格式 — 嚴格只輸出此格式，每頁兩個區塊】
+
+${isCover ? `---
+第 1 頁｜封面
+🎨 線稿提示詞：
+coloring book cover page for children, title "${title}", author "${author}", [主角完整外觀描述], black and white line art, clean bold outlines, no shading, no gray fills, white background, child-friendly, printable, ${age} appropriate
+📖 繪本文字：
+${title}
+${author}
+
+` : ''}---
+第 X 頁（依序從第 ${isCover?2:from} 頁輸出到第 ${to} 頁）
+🎨 線稿提示詞：
+[角色完整外觀描述（一字不差）], [場景與動作], coloring page for children, black and white line art, clean bold outlines, no shading, no gray fills, white background, simple design, child-friendly, printable, ${age} appropriate
+📖 繪本文字：
+[印在繪本上的文字，20–60字，溫暖，適合兒童]
+
+【規定】封面繪本文字只有書名和作者 · 第 ${to} 頁${to===total?'是最後一頁，溫馨收尾':`不是最後一頁（全書共${total}頁），故事未結束`} · 嚴格輸出 ${to-from+1} 頁不多不少`;
 }
 
 async function callGroq(prompt) {
@@ -830,6 +837,10 @@ async function generate() {
   const story = document.getElementById('story').value.trim();
   if (!story) { alert('請先輸入故事內容！'); return; }
 
+  const si    = parseInt(document.getElementById('style-sel').value);
+  const s     = STYLES[si];
+  const isColoring = !!s.coloring;
+
   const btn  = document.getElementById('gen-btn');
   const load = document.getElementById('loading');
   const res  = document.getElementById('result');
@@ -837,35 +848,42 @@ async function generate() {
   resultParts = [];
 
   try {
-    if (mode === 'coloring') {
-      setLoadMsg('AI 正在生成著色畫腳本，請稍候…');
-      renderParts([{from:0,to:0}]);
-      const txt = await callGroq(buildColorPrompt());
-      resultParts = [txt];
-      document.getElementById('result-label').textContent = '著色畫腳本';
-      document.getElementById('pt-0').textContent = '著色畫提示詞';
-      document.getElementById('pc-0').textContent = txt;
-      document.getElementById('pb-0').disabled = false;
-      document.getElementById('foot-note').textContent = '複製後可直接貼入 NotebookLM 使用';
+    const pages = parseInt(document.getElementById('pages-sel').value);
+    const title = document.getElementById('book-title').value.trim() || '（未填寫）';
+    const author= document.getElementById('author').value.trim()     || '（未填寫）';
+
+    if (isColoring) {
+      const age = document.getElementById('age').value.trim() || '3.5–6 歲';
+      const chunks = makeChunks(pages);
+      document.getElementById('result-label').textContent = `著色畫繪本 · ${pages} 頁`;
+      renderParts(chunks);
+
+      for (let i = 0; i < chunks.length; i++) {
+        const { from, to } = chunks[i];
+        setLoadMsg(`生成著色畫第 ${from}–${to} 頁（${i+1} / ${chunks.length} 段），請稍候…`);
+        const txt = await callGroq(buildColoringBookPrompt(story, title, author, age, from, to, pages));
+        resultParts[i] = txt;
+        const label = chunks.length === 1
+          ? `著色畫 第 ${from}–${to} 頁`
+          : `著色畫 第 ${from}–${to} 頁　　貼入 NotebookLM 第 ${i+1} 次`;
+        document.getElementById(`pt-${i}`).textContent = label;
+        document.getElementById(`pc-${i}`).textContent = txt;
+        document.getElementById(`pb-${i}`).disabled = false;
+      }
+      document.getElementById('foot-note').textContent = chunks.length === 1
+        ? '複製後可直接貼入 NotebookLM 使用'
+        : `共分 ${chunks.length} 段，請由上至下依序複製貼入 NotebookLM`;
 
     } else {
-      const si    = parseInt(document.getElementById('style-sel').value);
-      const s     = STYLES[si];
-      const pages = parseInt(document.getElementById('pages-sel').value);
-      const title = document.getElementById('book-title').value.trim() || '（未填寫）';
-      const author= document.getElementById('author').value.trim()     || '（未填寫）';
       const chunks = makeChunks(pages);
-
       document.getElementById('result-label').textContent = `繪本腳本 · ${s.zh} · ${pages} 頁`;
       renderParts(chunks);
 
       for (let i = 0; i < chunks.length; i++) {
         const { from, to } = chunks[i];
         setLoadMsg(`生成第 ${from}–${to} 頁（${i+1} / ${chunks.length} 段），請稍候…`);
-
         const txt = await callGroq(buildPagePrompt(story, title, author, s, from, to, pages));
         resultParts[i] = txt;
-
         const label = chunks.length === 1
           ? `第 ${from}–${to} 頁`
           : `第 ${from}–${to} 頁　　貼入 NotebookLM 第 ${i+1} 次`;
@@ -873,7 +891,6 @@ async function generate() {
         document.getElementById(`pc-${i}`).textContent = txt;
         document.getElementById(`pb-${i}`).disabled = false;
       }
-
       document.getElementById('foot-note').textContent = chunks.length === 1
         ? '複製後可直接貼入 NotebookLM 使用'
         : `共分 ${chunks.length} 段，請由上至下依序複製貼入 NotebookLM`;
@@ -905,9 +922,7 @@ function doDownload() {
   if (!resultParts.length) return;
   const sep = '\n\n' + '═'.repeat(40) + '\n\n';
   const all = resultParts.filter(Boolean).join(sep);
-  const name = mode==='book'
-    ? (document.getElementById('book-title').value.trim() || '繪本腳本')
-    : (document.getElementById('color-title').value.trim() || '著色畫腳本');
+  const name = document.getElementById('book-title').value.trim() || '繪本腳本';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([all], {type:'text/plain;charset=utf-8'}));
   a.download = name + '_提示詞腳本.txt'; a.click();
